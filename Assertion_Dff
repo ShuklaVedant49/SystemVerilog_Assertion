@@ -1,0 +1,23 @@
+module dff
+(
+input din, clk, rst,
+output reg dout  
+);
+  
+  always@(posedge clk)
+    begin
+      if(rst)
+        dout <= 1'b0;
+        assert(dout ==0)
+      else
+        dout <= din;
+        assert(dout==din);
+    end
+  
+  always@(posedge clk)
+    begin
+      A1: assert (dout == din) $info("Done at %0t:",$time); 
+      else $error("Assertion Failed %0t",$time);
+    end
+  
+endmodule

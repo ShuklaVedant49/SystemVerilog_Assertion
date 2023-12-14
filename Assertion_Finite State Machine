@@ -1,0 +1,121 @@
+//RTL Design
+// Designing State Machine
+
+module fsm ( 
+  input clk,rst,din,
+  output reg dout);
+  
+  enum bit[2:0]
+  {
+  	idle = 3'b001,
+    s0   = 3'b010,
+    s1   = 3'b100
+  }state=idle, next_state=idle ;
+  
+  //How does reset works //
+  always@(posedge clk)
+    begin
+      if(rst==1'b0)
+        begin
+          state <= idle;
+        end
+      else
+        begin
+          state<= next_state;
+        end
+    end
+  
+  always@(state,din)
+    begin
+      case(state)
+        idle:
+          begin
+            dout=1'b0;
+            next_state<=s0;
+          end
+        
+        s0:
+          begin
+          if(din==1'b1)
+            begin
+              next_state <= s1;
+            end
+          else
+            begin
+              next_state <= s0;
+            end
+          end
+        
+        s1:
+          begin
+          if(din==1'b1)
+            begin
+              next_state <=s0;
+              dout <= 1'b1;
+            end
+          else
+            begin
+              next_state <= s1;
+              dout <= 1'b0;
+            end
+          end
+      endcase
+    end
+endmodule
+ 
+//****************TB Using SV Assertion
+module tb;
+  reg clk=0;
+  reg rst=0;
+  reg din=0;
+  wire dout=0;
+  
+  fsm dut(clk,rst,din,dout);
+  
+  always #5 clk=~clk;
+  
+  initial begin
+    #3;
+    rst = 1;
+    #30;
+    rst = 0;
+    din = 1;
+    #45;
+    din = 0;
+    #25;
+    rst = 1;
+    #40;
+    rst = 0;
+  end
+  
+  
+  /////Starting Assertion
+  Start_Encoding: assert property (@(posedge clk) 1'b1 |-> $onehot(dut.state));
+    
+  ///what Happens if Reset Assert
+    State_RST_HIGH: assert property (@(posedge clk) $rose(rst) |=>(((dut.state==dut.idle)[*1:18]) within (rst[*1:18]##1 !rst)));
+  //////////////////////////////////////////////////////////////////////////////////////
+  //INSERTING Din VALUES
+  sequence s1;
+    (dut.next_state==dut.idle) ##2 (dut.next_state == dut.s0);
+  endsequence
+      
+  sequence s2;
+    (dut.next_state == dut.s0) ##2 (dut.next_state == dut.s1);
+  endsequence
+     
+  sequence s3;
+    (dut.next_state == dut.s1) ##2 (dut.next_state == dut.s0);
+  endsequence
+      
+      valid: assert property (@(posedge clk) disable iff(rst) din |-> (s1 or s2 or s3));
+  ////////////////////////////////////////////////////////////////////////////////////////
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars;
+    $assertvacuousoff(0);
+    #100;
+    $finish;
+  end
+ 
+endmodule

@@ -1,0 +1,58 @@
+//RTL and Test Benchmodule mux (I0,I1,I2,I3,SEL,out);
+  input I0,I1,I2,I3;
+  output reg out;
+  input [1:0] SEL;
+  
+  //////RTL Logic
+  always @(*)
+    begin
+      case(SEL)
+        2'b00: out = I0;
+        2'b01: out = I1;
+        2'b10: out = I2;
+        2'b11: out = I3;
+      endcase
+    end
+      
+  ///////Assertion Logic
+  always @(*)
+    begin
+      case(SEL)
+        2'b00:out_assert_IO: assert (out==I0) $error ("OUT not equal to IO");
+        2'b01:out_assert_IO: assert (out==I1) $error ("OUT not equal to I1");
+        2'b10:out_assert_IO: assert (out==I2) $error ("OUT not equal to I2");
+        2'b11:out_assert_IO: assert (out==I3) $error ("OUT not equal to I3");
+      endcase
+    end
+endmodule
+
+/////////////////Test Bench
+module tb();
+  reg I0=0,I1=0,I2=0,I3=0;  
+  reg [1:0] SEL=0;
+  wire out;
+  
+  mux dut (I0,I1,I2,I3,SEL,out);
+
+  always #5 I0=~I0;
+  always #10 I1=~I1;
+  always #15 I2=~I2;
+  always #10 I3=~I3;
+  
+  initial begin
+    SEL = 2'b00;
+    #50;
+    SEL = 2'b01;
+    #50;
+    SEL = 2'b10;
+    #50;
+    SEL = 2'b11;
+  end
+  
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars;
+    #300;
+    $finish;
+  end
+endmodule
